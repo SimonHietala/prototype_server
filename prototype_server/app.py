@@ -28,10 +28,12 @@ class Worktask(db.Model):
     inmotion = db.Column(db.Boolean, nullable=True)
     edited = db.Column(db.Boolean, nullable=True)
 
-    def __init__(self, task, location, starttime, gps, notes, inmotion, edited):
+    def __init__(self, task, location, starttime, stoptime, time,  gps, notes, inmotion, edited):
         self.task = task
         self.location = location
         self.starttime = starttime
+        self.stoptime = stoptime
+        self.time = time
         self.gps = gps
         self.notes = notes
         self.inmotion = inmotion
@@ -58,49 +60,69 @@ def get():
     #working
     #q = Worktask.query.all()
     q = Worktask.query.filter_by(task='work').first().location
-    return q
+    return q   
 
-@app.route('/post', methods=['POST'])
-def post():
-    
-    content = request.get_json(force=True)
-    
-    worktask = Worktask(content['task'],
-                        content['location'],                     
-                        content['starttime'],
-                        content['gps'],
-                        content['notes'])
-    db.session.add(worktask)
-    db.session.commit()
-
-    returnid = worktask.id
-    return str(returnid)
-
-@app.route('/worktasks/<id>', methods=['GET'])
+@app.route('/worktasks/<id>', methods=['GET','PUT'])
 def get_worktask(id):
-    wt = Worktask.query.get(id)
-    return Worktask.to_json(wt)
+    if request.method == 'GET':
+        wt = Worktask.query.get(id)
+        return Worktask.to_json(wt)
+    
+    elif request.method == 'PUT':
+        content = request.get_json(force=True)
+        wt = Worktask.query.filter_by(id=id).first()
+        wt.task = content['task']
+        wt.location = content['location']
+        wt.starttime = content['starttime']
+        wt.stoptime = content['stoptime']
+        wt.time = content['time']
+        wt.gps = content['gps']
+        wt.notes = content['notes']
+        wt.inmotion = content['inmotion']
+        wt.edited = content['edited']
+        db.session.commit() 
 
-@app.route('/worktasks', methods=['GET'])
+        return "Inserted into database."
+
+@app.route('/worktasks', methods=['GET','POST'])
 def get_worktasks():
     #wts = Worktask.query.order_by(Worktask.id.desc()).limit(10)
-    wts = Worktask.query.all();
-    list = []
-    for wt in wts:
-        item = {}
-        item['id'] = wt.id
-        item['task'] = wt.task
-        item['location'] = wt.location
-        item['starttime'] = wt.starttime                     
-        item['stoptime'] = wt.stoptime
-        item['time'] = wt.time
-        item['notes'] = wt.notes
-        item['gps'] = wt.gps
-        item['inmotion'] = wt.inmotion
-        item['edited'] = wt.edited
-        list.append(item)
+    if request.method == 'GET':
+        wts = Worktask.query.order_by(Worktask.id.desc());
+        list = []
+        for wt in wts:
+            item = {}
+            item['id'] = wt.id
+            item['task'] = wt.task
+            item['location'] = wt.location
+            item['starttime'] = wt.starttime                     
+            item['stoptime'] = wt.stoptime
+            item['time'] = wt.time
+            item['notes'] = wt.notes
+            item['gps'] = wt.gps
+            item['inmotion'] = wt.inmotion
+            item['edited'] = wt.edited
+            list.append(item)
    
-    return jsonify(array=list)
+        return jsonify(array=list)
+    
+    elif request.method == 'POST':
+        content = request.get_json(force=True)
+    
+        worktask = Worktask(content['task'],
+                            content['location'],                     
+                            content['starttime'],                  
+                            content['stoptime'],
+                            content['time'],
+                            content['gps'],
+                            content['notes'],
+                            content['inmotion'],
+                            content['edited'])
+        db.session.add(worktask)
+        db.session.commit()
+
+        returnid = worktask.id
+        return str(returnid)
 
 if __name__ == '__main__':
     app.debug = True
