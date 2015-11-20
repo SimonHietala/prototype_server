@@ -14,7 +14,6 @@ db = SQLAlchemy(app)
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
-
 class Worktask(db.Model):
     __tablename__ = 'worktasks_v2'
     id = db.Column(db.Integer, primary_key=True)
@@ -46,14 +45,6 @@ class Worktask(db.Model):
                    gps=wt.gps,
                    notes=wt.notes)
 
-    def to_json_array(wts):
-        for wt in wts:
-            jsonify(task=wt.task,
-                   location=wt.location,
-                   starttime=wt.starttime,
-                   gps=wt.gps,
-                   notes=wt.notes)
-
 
 @app.route('/get', methods=['GET'])
 def get():
@@ -61,6 +52,20 @@ def get():
     #q = Worktask.query.all()
     q = Worktask.query.filter_by(task='work').first().location
     return q   
+
+@app.route('/worktasks/headers', methods=['GET'])
+def get_headers():
+    #query = db.session.query(Worktask.task.distinct())
+    query = db.session.query(Worktask.task)
+    headers = []
+    for header in query:
+        item = header[0]
+        headers.append(item)
+
+    myset = set(headers)
+    mylist = list(myset)
+    return jsonify(array=mylist)
+
 
 @app.route('/worktasks/<id>', methods=['GET','PUT'])
 def get_worktask(id):
