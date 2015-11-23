@@ -65,6 +65,26 @@ def get_headers():
     myset = set(headers)
     mylist = list(myset)
     return jsonify(array=mylist)
+  
+@app.route('/worktasks/headers/<header>', methods=['GET'])
+def get_sorted_worktasks(header):
+    wts = Worktask.query.filter_by(task=header).order_by(Worktask.id.desc())
+    list = []
+    for wt in wts:
+        item = {}
+        item['id'] = wt.id
+        item['task'] = wt.task
+        item['location'] = wt.location
+        item['starttime'] = wt.starttime                     
+        item['stoptime'] = wt.stoptime
+        item['time'] = wt.time
+        item['notes'] = wt.notes
+        item['gps'] = wt.gps
+        item['inmotion'] = wt.inmotion
+        item['edited'] = wt.edited
+        list.append(item)
+    
+    return jsonify(array=list)
 
 
 @app.route('/worktasks/<id>', methods=['GET','PUT'])
@@ -132,4 +152,3 @@ def get_worktasks():
 if __name__ == '__main__':
     app.debug = True
     app.run(host="0.0.0.0")
-
