@@ -15,24 +15,26 @@ db = SQLAlchemy(app)
 wsgi_app = app.wsgi_app
 
 class Worktask(db.Model):
-    __tablename__ = 'worktasks_v2'
+    __tablename__ = 'worktasks_v4'
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.String(100), nullable=True)
     location = db.Column(db.String(100), nullable=True)
     starttime = db.Column(db.String(100), nullable=True)
     stoptime = db.Column(db.String(100), nullable=True)
     time = db.Column(db.String(100), nullable=True)
+    timeinseconds = db.Column(db.Float, nullable=True)
     notes = db.Column(db.String(500), nullable=True)
     gps = db.Column(db.String(100), nullable=True)
     inmotion = db.Column(db.Boolean, nullable=True)
     edited = db.Column(db.Boolean, nullable=True)
 
-    def __init__(self, task, location, starttime, stoptime, time,  gps, notes, inmotion, edited):
+    def __init__(self, task, location, starttime, stoptime, time, timeinseconds, gps, notes, inmotion, edited):
         self.task = task
         self.location = location
         self.starttime = starttime
         self.stoptime = stoptime
         self.time = time
+        self.timeinseconds = timeinseconds
         self.gps = gps
         self.notes = notes
         self.inmotion = inmotion
@@ -65,7 +67,31 @@ def get_headers():
     myset = set(headers)
     mylist = list(myset)
     return jsonify(array=mylist)
-  
+
+@app.route('/worktasks/headerstime', methods=['GET'])
+def get_headerstime():
+    query = db.session.query(Worktask.task)
+    headers = []
+    for header in query:
+        item = header[0]
+        headers.append(item)
+
+    myset = set(headers)
+    mylist = list(myset)
+
+    sendlist = []
+    for row in mylist:
+        wts = Worktask.query.filter_by(task=row).order_by(Worktask.id.desc())
+        item = {}
+        sum = 0.0
+        for wt in wts:
+            sum = sum + wt.timeinseconds
+        item['task'] = row
+        item['time'] = sum
+        sendlist.append(item)
+    
+    return jsonify(array=sendlist)
+
 @app.route('/worktasks/headers/<header>', methods=['GET'])
 def get_sorted_worktasks(header):
     wts = Worktask.query.filter_by(task=header).order_by(Worktask.id.desc())
@@ -78,6 +104,7 @@ def get_sorted_worktasks(header):
         item['starttime'] = wt.starttime                     
         item['stoptime'] = wt.stoptime
         item['time'] = wt.time
+        item['timeinseconds'] = wt.timeinseconds
         item['notes'] = wt.notes
         item['gps'] = wt.gps
         item['inmotion'] = wt.inmotion
@@ -101,6 +128,7 @@ def get_worktask(id):
         wt.starttime = content['starttime']
         wt.stoptime = content['stoptime']
         wt.time = content['time']
+        wt.timeinseconds = content['timeinseconds']
         wt.gps = content['gps']
         wt.notes = content['notes']
         wt.inmotion = content['inmotion']
@@ -113,7 +141,7 @@ def get_worktask(id):
 def get_worktasks():
     #wts = Worktask.query.order_by(Worktask.id.desc()).limit(10)
     if request.method == 'GET':
-        wts = Worktask.query.order_by(Worktask.id.desc());
+        wts = Worktask.query.order_by(Worktask.id.desc())
         list = []
         for wt in wts:
             item = {}
@@ -123,6 +151,7 @@ def get_worktasks():
             item['starttime'] = wt.starttime                     
             item['stoptime'] = wt.stoptime
             item['time'] = wt.time
+            item['timeinseconds'] = wt.timeinseconds
             item['notes'] = wt.notes
             item['gps'] = wt.gps
             item['inmotion'] = wt.inmotion
@@ -139,6 +168,7 @@ def get_worktasks():
                             content['starttime'],                  
                             content['stoptime'],
                             content['time'],
+                            content['timeinseconds'],
                             content['gps'],
                             content['notes'],
                             content['inmotion'],
